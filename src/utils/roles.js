@@ -1,7 +1,7 @@
 import { ROUTES } from './routes'
 
-export function getDefaultRouteForRole(role) {
-  return role === 'caregiver' ? ROUTES.caregiverDashboard : ROUTES.dashboard
+export function getDefaultRouteForRole(_role) {
+  return ROUTES.dashboard
 }
 
 export function getAuthRoute({ currentUser, userProfile }) {

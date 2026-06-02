@@ -3,8 +3,8 @@ export const ROUTES = {
   login: '/login',
   signup: '/signup',
   dashboard: '/dashboard',
-  caregiverDashboard: '/caregiver-dashboard',
-  medications: '/medications',
-  insights: '/insights',
-  scanner: '/scanner',
+  family: '/family',
+  reports: '/reports',
+  timeline: '/timeline',
+  doctorSummary: '/doctor-summary',
 }

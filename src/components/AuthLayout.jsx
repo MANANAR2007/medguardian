@@ -22,15 +22,15 @@ export default function AuthLayout({ title, eyebrow, description, children }) {
               <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Auth foundation</p>
               <p className="mt-3 text-2xl font-extrabold text-gray-900 dark:text-gray-100">Firebase</p>
               <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Email/password authentication with Firestore-backed user profiles.
+                Secure sign-in with Firestore-backed account profiles.
               </p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Medication care</p>
-              <p className="mt-3 text-2xl font-extrabold text-gray-900 dark:text-gray-100">Tracked</p>
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Family record vault</p>
+              <p className="mt-3 text-2xl font-extrabold text-gray-900 dark:text-gray-100">Organized</p>
               <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Role-based dashboards for patients and linked caregivers.
+                Upload reports, prescriptions, and notes for every family member in one place.
               </p>
             </div>
           </div>

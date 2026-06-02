@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
-import { MedicationDataProvider } from './context/MedicationDataContext'
+import { FamilyHealthProvider } from './context/FamilyHealthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ToastProvider } from './context/ToastContext'
 import './index.css'
@@ -14,9 +14,9 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <MedicationDataProvider>
+            <FamilyHealthProvider>
               <App />
-            </MedicationDataProvider>
+            </FamilyHealthProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

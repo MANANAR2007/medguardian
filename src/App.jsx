@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-
+import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import LoadingScreen from './components/LoadingScreen'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -9,35 +8,28 @@ import { useAuth } from './hooks/useAuth'
 import { getAuthRoute } from './utils/roles'
 import { ROUTES } from './utils/routes'
 
-
-const CaregiverDashboardPage = lazy(() => import('./pages/CaregiverDashboardPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const InsightsPage = lazy(() => import('./pages/InsightsPage'))
+const DoctorSummaryPage = lazy(() => import('./pages/DoctorSummaryPage'))
+const FamilyMembersPage = lazy(() => import('./pages/FamilyMembersPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
-const MedicationsPage = lazy(() => import('./pages/MedicationsPage'))
-const ScannerPage = lazy(() => import('./pages/ScannerPage'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SignupPage = lazy(() => import('./pages/SignupPage'))
-
+const TimelinePage = lazy(() => import('./pages/TimelinePage'))
 
 function IndexRedirect() {
   const { authLoading, currentUser, userProfile } = useAuth()
 
   if (authLoading) {
-    return <LoadingScreen label="Preparing your MedGuardian workspace..." />
+    return <LoadingScreen label="Preparing Family Health Companion..." />
   }
 
   return <Navigate to={getAuthRoute({ currentUser, userProfile })} replace />
 }
 
-
 export default function App() {
-  const location = useLocation() // ✅ key fix
-
   return (
-    <Suspense fallback={<LoadingScreen label="Loading MedGuardian..." />}>
-      
-      <Routes location={location} key={location.pathname}>
-        
+    <Suspense fallback={<LoadingScreen label="Loading Family Health Companion..." />}>
+      <Routes>
         <Route path={ROUTES.home} element={<IndexRedirect />} />
 
         <Route
@@ -58,7 +50,6 @@ export default function App() {
           }
         />
 
-        {/* Protected Layout */}
         <Route
           element={
             <ProtectedRoute>
@@ -66,53 +57,13 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route
-            path={ROUTES.dashboard}
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path={ROUTES.caregiverDashboard}
-            element={
-              <ProtectedRoute allowedRoles={['caregiver']}>
-                <CaregiverDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path={ROUTES.medications}
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <MedicationsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path={ROUTES.insights}
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <InsightsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path={ROUTES.scanner}
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <ScannerPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+          <Route path={ROUTES.family} element={<FamilyMembersPage />} />
+          <Route path={ROUTES.reports} element={<ReportsPage />} />
+          <Route path={ROUTES.timeline} element={<TimelinePage />} />
+          <Route path={ROUTES.doctorSummary} element={<DoctorSummaryPage />} />
         </Route>
 
-       
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </Suspense>

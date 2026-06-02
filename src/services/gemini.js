@@ -1,4 +1,4 @@
-function fetchWithTimeout(url, options = {}, timeout = 15000) {
+function fetchWithTimeout(url, options = {}, timeout = 20000) {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
 
@@ -36,7 +36,7 @@ async function safeParseResponse(response, fallback = {}) {
   return data
 }
 
-export async function generateMedicationInsights(payload) {
+async function postGemini(payload, fallback) {
   try {
     const response = await fetchWithTimeout('/api/gemini', {
       method: 'POST',
@@ -46,12 +46,7 @@ export async function generateMedicationInsights(payload) {
       body: JSON.stringify(payload),
     })
 
-    const data = await safeParseResponse(response, { insights: '' })
-
-    return {
-      insights: typeof data.insights === 'string' ? data.insights : '',
-      fallback: Boolean(data.fallback),
-    }
+    return await safeParseResponse(response, fallback)
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error('AI failed, try again', { cause: error })
@@ -61,30 +56,62 @@ export async function generateMedicationInsights(payload) {
   }
 }
 
-export async function scanPrescription({ data, mimeType }) {
-  try {
-    const response = await fetchWithTimeout('/api/gemini', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+export async function analyzeHealthDocument({ fileData, mimeType, fileName, category, familyMemberName }) {
+  return postGemini(
+    {
+      mode: 'analyze-health-document',
+      category,
+      familyMemberName,
+      file: {
+        data: fileData,
+        mimeType,
+        name: fileName,
       },
-      body: JSON.stringify({
-        mode: 'prescription-scan',
-        file: {
-          data,
-          mimeType,
-        },
-      }),
-    })
+    },
+    {
+      reportTitle: fileName || 'Uploaded document',
+      reportDate: '',
+      reportType: category,
+      tests: [],
+      medications: [],
+      healthCard: null,
+      doctorSummary: null,
+      extractedNarrative: '',
+    },
+  )
+}
 
-    const result = await safeParseResponse(response, { medications: [] })
+export async function explainHealthTest(test) {
+  return postGemini(
+    {
+      mode: 'explain-report-test',
+      test,
+    },
+    {
+      testName: test.test || '',
+      whatItMeasures: '',
+      normalRange: test.referenceRange || '',
+      userValue: `${test.value || ''}${test.unit ? ` ${test.unit}` : ''}`.trim(),
+      whyItMatters: '',
+      interpretation: '',
+    },
+  )
+}
 
-    return Array.isArray(result.medications) ? result.medications : []
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error('AI failed, try again', { cause: error })
-    }
-
-    throw new Error(error.message || 'AI failed, try again', { cause: error })
-  }
+export async function generateDoctorSummary({ familyMemberName, reports }) {
+  return postGemini(
+    {
+      mode: 'generate-doctor-summary',
+      familyMemberName,
+      reports,
+    },
+    {
+      headline: '',
+      summary: '',
+      importantAbnormalities: [],
+      trends: [],
+      medicationChanges: [],
+      recommendedFollowUps: [],
+    },
+  )
 }

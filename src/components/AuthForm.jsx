@@ -102,8 +102,8 @@ export default function AuthForm({
               name="role"
               className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-950"
             >
-              <option value="patient">Patient</option>
-              <option value="caregiver">Caregiver</option>
+              <option value="patient">Family organizer</option>
+              <option value="caregiver">Care partner</option>
             </select>
           </label>
         ) : null}
@@ -127,7 +127,7 @@ export default function AuthForm({
       </p>
 
       <p className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs leading-5 text-gray-500 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-400">
-        New signups create a Firestore profile with the selected role for patient or caregiver access.
+        New signups create a Firestore profile that unlocks secure family profiles and health record vaults.
       </p>
     </div>
   )
