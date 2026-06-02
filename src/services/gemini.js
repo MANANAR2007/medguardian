@@ -17,6 +17,22 @@ function safeJsonParse(text, fallback = {}) {
   }
 }
 
+function resolveApiErrorMessage(response, text, data) {
+  if (
+    response.status === 413 ||
+    text.includes('FUNCTION_PAYLOAD_TOO_LARGE') ||
+    text.startsWith('Request Entity Too Large')
+  ) {
+    return 'The uploaded file is too large. Please upload a smaller file or a report with fewer pages.'
+  }
+
+  if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+    return 'The uploaded file is too large. Please upload a smaller file or a report with fewer pages.'
+  }
+
+  return data?.error || 'AI failed, try again'
+}
+
 async function safeParseResponse(response, fallback = {}) {
   const text = await response.text()
   const data = safeJsonParse(text, fallback)
@@ -30,7 +46,7 @@ async function safeParseResponse(response, fallback = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || 'AI failed, try again')
+    throw new Error(resolveApiErrorMessage(response, text, data))
   }
 
   return data
@@ -56,14 +72,16 @@ async function postGemini(payload, fallback) {
   }
 }
 
-export async function analyzeHealthDocument({ fileData, mimeType, fileName, category, familyMemberName }) {
+export async function analyzeHealthDocument({ fileData, fileUrl, mimeType, fileName, category, familyMemberName, extractedText }) {
   return postGemini(
     {
       mode: 'analyze-health-document',
       category,
       familyMemberName,
+      extractedText,
       file: {
         data: fileData,
+        url: fileUrl,
         mimeType,
         name: fileName,
       },

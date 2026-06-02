@@ -2,19 +2,8 @@ import { useState } from 'react'
 import Card from './Card'
 import SectionHeader from './SectionHeader'
 
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const result = String(reader.result || '')
-      resolve(result.includes(',') ? result.split(',')[1] : result)
-    }
-
-    reader.onerror = () => reject(new Error('Unable to read this file.'))
-    reader.readAsDataURL(file)
-  })
-}
+const MAX_PDF_BYTES = 10 * 1024 * 1024
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 const categoryOptions = [
   { value: 'lab-report', label: 'Lab report' },
@@ -29,6 +18,19 @@ export default function ReportUploader({ activeFamilyMember, onUpload }) {
   const [isUploading, setIsUploading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
+  function validateFile(file) {
+    const isPdf = file.type === 'application/pdf'
+    const isImage = file.type.startsWith('image/')
+
+    if (isPdf && file.size > MAX_PDF_BYTES) {
+      throw new Error('The uploaded file is too large. Please upload a smaller file or a report with fewer pages.')
+    }
+
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      throw new Error('The uploaded file is too large. Please upload a smaller file or a report with fewer pages.')
+    }
+  }
+
   async function processFile(file) {
     if (!file || !activeFamilyMember) {
       return
@@ -38,7 +40,7 @@ export default function ReportUploader({ activeFamilyMember, onUpload }) {
     setErrorMessage('')
 
     try {
-      const fileData = await readFileAsBase64(file)
+      validateFile(file)
 
       await onUpload({
         familyMemberId: activeFamilyMember.id,
@@ -47,7 +49,8 @@ export default function ReportUploader({ activeFamilyMember, onUpload }) {
         file: {
           name: file.name,
           mimeType: file.type || 'application/octet-stream',
-          data: fileData,
+          size: file.size,
+          rawFile: file,
         },
       })
     } catch (error) {

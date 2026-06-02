@@ -11,6 +11,7 @@ import {
   updateFamilyMemberRecord,
 } from '../services/familyHealth'
 import { analyzeHealthDocument } from '../services/gemini'
+import { uploadHealthDocumentFile } from '../services/storage'
 import {
   buildFollowUps,
   buildHealthAlerts,
@@ -19,6 +20,20 @@ import {
   getLatestHealthScore,
 } from '../utils/familyHealth'
 import { FamilyHealthContext } from './family-health-context'
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const result = String(reader.result || '')
+      resolve(result.includes(',') ? result.split(',')[1] : result)
+    }
+
+    reader.onerror = () => reject(new Error('Unable to read this file.'))
+    reader.readAsDataURL(file)
+  })
+}
 
 const initialState = {
   familyMembers: [],
@@ -253,11 +268,25 @@ export function FamilyHealthProvider({ children }) {
       throw new Error('You must be signed in to upload reports.')
     }
 
+    const { storagePath, storageUrl } = await uploadHealthDocumentFile({
+      accountId,
+      familyMemberId,
+      file,
+    })
+
+    const isPdf = file.mimeType === 'application/pdf'
+    const isTextDocument = file.mimeType.startsWith('text/')
+    const fileData = !isPdf && !isTextDocument ? await readFileAsBase64(file.rawFile) : ''
+    const extractedText = isTextDocument ? await file.rawFile.text() : ''
+
     const analysis = await analyzeHealthDocument({
-      fileData: file.data,
+      fileData,
+      fileUrl: storageUrl,
       mimeType: file.mimeType,
+      fileName: file.name,
       category,
       familyMemberName,
+      extractedText,
     })
 
     const reportPayload = {
@@ -266,7 +295,10 @@ export function FamilyHealthProvider({ children }) {
       familyMemberName,
       category,
       fileName: file.name,
+      fileSize: file.size,
       mimeType: file.mimeType,
+      storageUrl,
+      storagePath,
       reportTitle: analysis.reportTitle || file.name,
       reportDate: analysis.reportDate || '',
       reportType: analysis.reportType || category,

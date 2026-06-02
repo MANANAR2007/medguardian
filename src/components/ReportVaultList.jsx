@@ -46,6 +46,16 @@ export default function ReportVaultList({ reports, onDelete, onSelectTest }) {
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {report.familyMemberName} · {formatDisplayDate(report.reportDate || report.uploadedAt)}
               </p>
+              {report.storageUrl ? (
+                <a
+                  href={report.storageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                >
+                  View original file
+                </a>
+              ) : null}
             </div>
 
             <Button type="button" variant="ghost" size="sm" onClick={() => onDelete(report)}>

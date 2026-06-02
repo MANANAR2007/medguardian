@@ -1,3 +1,5 @@
+import pdfParse from 'pdf-parse'
+
 const GEMINI_API_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
@@ -152,6 +154,28 @@ function normalizeReportAnalysis(payload) {
   }
 }
 
+function truncateText(text, maxLength = 120000) {
+  const normalized = String(text || '').trim()
+
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+
+  return normalized.slice(0, maxLength)
+}
+
+async function fetchPdfText(fileUrl) {
+  const response = await fetch(fileUrl)
+
+  if (!response.ok) {
+    throw new Error('Unable to download the uploaded PDF for analysis.')
+  }
+
+  const arrayBuffer = await response.arrayBuffer()
+  const pdfData = await pdfParse(Buffer.from(arrayBuffer))
+  return truncateText(pdfData.text)
+}
+
 function createDocumentAnalysisPrompt(category, familyMemberName) {
   return `You are analyzing a family health document for ${familyMemberName || 'a family member'}.
 
@@ -214,6 +238,15 @@ Rules:
 - Never invent lab values.
 - Keep key findings and follow-ups short and patient-friendly.
 - If unsure, return an empty but valid object with empty strings, empty arrays, and null values.`
+}
+
+function createDocumentTextPrompt({ category, familyMemberName, extractedText, fileName }) {
+  return `${createDocumentAnalysisPrompt(category, familyMemberName)}
+
+Document file name: ${fileName || 'Unknown file'}
+
+Extracted document text:
+${truncateText(extractedText, 100000) || 'No extracted text available.'}`
 }
 
 function createTestExplanationPrompt(test) {
@@ -407,13 +440,15 @@ export default async function handler(req, res) {
 
   if (mode === 'analyze-health-document') {
     const fileData = String(req.body?.file?.data || '').trim()
+    const fileUrl = String(req.body?.file?.url || '').trim()
     const mimeType = String(req.body?.file?.mimeType || '').trim()
     const fileName = String(req.body?.file?.name || '').trim()
     const category = String(req.body?.category || 'general-report').trim()
     const familyMemberName = String(req.body?.familyMemberName || '').trim()
+    const extractedText = String(req.body?.extractedText || '').trim()
     const fallback = createFallbackReportAnalysis(category, fileName)
 
-    if (!fileData || !mimeType) {
+    if (!mimeType) {
       return sendJson(res, 200, fallback)
     }
 
@@ -421,22 +456,58 @@ export default async function handler(req, res) {
     const timeoutId = setTimeout(() => controller.abort(), 22000)
 
     try {
-      const geminiResult = await callGemini(
-        [
-          { text: createDocumentAnalysisPrompt(category, familyMemberName) },
-          {
-            inline_data: {
-              mime_type: mimeType,
-              data: fileData,
+      const isPdf = mimeType === 'application/pdf'
+      const isTextDocument = mimeType.startsWith('text/')
+      let geminiResult
+
+      if (isPdf || isTextDocument) {
+        const documentText = isPdf
+          ? await fetchPdfText(fileUrl)
+          : truncateText(extractedText)
+
+        if (!documentText) {
+          return sendJson(res, 200, fallback)
+        }
+
+        geminiResult = await callGemini(
+          [
+            {
+              text: createDocumentTextPrompt({
+                category,
+                familyMemberName,
+                extractedText: documentText,
+                fileName,
+              }),
             },
+          ],
+          {
+            temperature: 0.1,
+            maxOutputTokens: 1400,
           },
-        ],
-        {
-          temperature: 0.1,
-          maxOutputTokens: 1400,
-        },
-        controller.signal,
-      )
+          controller.signal,
+        )
+      } else {
+        if (!fileData) {
+          return sendJson(res, 200, fallback)
+        }
+
+        geminiResult = await callGemini(
+          [
+            { text: createDocumentAnalysisPrompt(category, familyMemberName) },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: fileData,
+              },
+            },
+          ],
+          {
+            temperature: 0.1,
+            maxOutputTokens: 1400,
+          },
+          controller.signal,
+        )
+      }
 
       if (!geminiResult.ok || !geminiResult.text) {
         console.error('Health document analysis returned no usable Gemini output:', geminiResult.error)
