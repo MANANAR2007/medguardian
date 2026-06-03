@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse'
+import pdf from 'pdf-parse'
 
 const GEMINI_API_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
@@ -172,7 +172,7 @@ async function fetchPdfText(fileUrl) {
   }
 
   const arrayBuffer = await response.arrayBuffer()
-  const pdfData = await pdfParse(Buffer.from(arrayBuffer))
+  const pdfData = await pdf(Buffer.from(arrayBuffer))
   return truncateText(pdfData.text)
 }
 
